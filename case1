@@ -1,0 +1,129 @@
+Steps
+
+
+#inicially update yum 
+
+
+Sudo yum update
+
+sudo yum install lvm2
+
+fdisk -l
+
+pvcreate /dev/xvda /dev/xvdg
+
+vgcreate storage1 /dev/xvda /dev/xvdg
+
+lvcreate --name mydisk --size 8000M storage1
+
+mkfs.ext3 /dev/storage1/mydisk
+
+fdisk /dev/storage1/mydisk
+>>n
+>>1
+>>[Default]
+>>[Default]
+>>4000M
+>>n
+>>2
+>>[default]
+>>[default]
+>>[default]
+>>wq
+
+#for automatic mounting
+#Entry This code at the bottom of file /etc/fstab
+
+/dev/storage1/mydisk1 /home1        xfs         defaults 0 0
+/dev/storage1/mydisk2 /var/lib/mysql     xfs       deafults       0 0
+
+
+
+mount -a
+
+# Installing mariadb server - client (version 10) 
+# my.repo is file stored on my github contains all mariadb v10 link 
+
+# this command stores the my.repo file to yum repo directory 
+
+Sudo wget https://raw.githubusercontent.com/prdpjngd/pythoncodes/master/mariadb -O /etc/yum.repos.d/my.repo
+
+
+sudo yum install MariaDB-server MariaDB-client
+
+mysql_secure_installation<<EOF
+>> pass
+>> n
+>> n
+>> n
+>> n
+>> n
+>> EOF
+
+
+
+
+# installing php version 7… using remi release v7 rpm
+Sudo wget -q http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+
+Sudo wget -q https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+Sudo rpm -i remi-release-7.rpm epel-release-latest-7.noarch.rpm
+
+Sudo yum-config-manager --enable remi-php72
+
+sudo yum install php php-mysql php-devel php-gd php-pecl-memcache php-pspell php-snmp php-xmlrpc php-xml -y
+
+
+
+
+# configuration of Mariadb & user creation , db create
+
+
+# mysql -u root -p
+mysql> CREATE DATABASE wordpress;
+mysql> CREATE USER `admin`@`localhost` IDENTIFIED BY 'pass';
+mysql> GRANT ALL ON wordpress.* TO `admin`@`localhost`;
+mysql> FLUSH PRIVILEGES;
+mysql> exit
+
+# downloading wordpress and moving its data to httpd folder
+
+curl https://wordpress.org/latest.tar.gz --output wordpress.tar.gz 
+
+tar xf wordpress.tar.gz
+
+cp -r wordpress /var/www/html
+
+
+# setting up ssl cerificate 
+
+Yum install mod_ssl
+
+firewall-cmd --zone=public --permanent --add-service=https
+
+firewall-cmd --reload
+
+openssl req -newkey rsa:2048 -nodes -keyout /etc/pki/tls/private/httpd.key -x509 -days 365 -out /etc/pki/tls/certs/httpd.crt
+
+
+# new users
+useradd -d /var/www/html/wordpress  wp
+
+user -d /var/www/html/magento magento
+
+
+
+
+# start services 
+
+sudo systemctl enable mariadb
+
+sudo systemctl start mariadb
+
+systemctl start httpd
+systemctl enable httpd
+
+
+https://13.232.26.171/wordpress/
+
